@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 关系
+  submissions Submission[]
+  progress    UserProgress?
+  
+  @@map("users")
+}
+
+// 题目表
+model Problem {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  difficulty  String   // easy, medium, hard
+  tags        String[] // 标签数组
+  testCases   Json     // 测试用例
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关系
+  submissions Submission[]
+  
+  @@map("problems")
+}
+
+// 提交记录表
+model Submission {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  code      String   @db.Text
+  language  String   // javascript, python, cpp
+  status    String   // pending, judging, accepted, wrong_answer, etc.
+  result    Json?    // 评测结果
+  time      Int?     // 运行时间(ms)
+  memory    Int?     // 内存使用(KB)
+  createdAt DateTime @default(now())
+  
+  // 关系
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  
+  @@map("submissions")
+}
+
+// 用户进度表
+model UserProgress {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  totalSolved    Int      @default(0)
+  totalAttempted Int      @default(0)
+  easySolved     Int      @default(0)
+  mediumSolved   Int      @default(0)
+  hardSolved     Int      @default(0)
+  streakDays     Int      @default(0)
+  lastActive     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // 关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_progress")
+}
